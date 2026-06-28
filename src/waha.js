@@ -123,19 +123,7 @@ export class WahaClient {
    * @param {string} audioUrl - Public URL of the audio file
    */
   async sendAudio(chatId, audioUrl) {
-    try {
-      const response = await client.post('/api/sendAudio', {
-        session: WAHA_SESSION,
-        chatId: chatId,
-        file: {
-          url: audioUrl
-        }
-      });
-      return response.data;
-    } catch (error) {
-      console.warn(`sendAudio failed, falling back to sendFile:`, error.response?.data || error.message);
-      return this.sendFile(chatId, audioUrl, 'audio.mp3', 'audio/mpeg');
-    }
+    return this.sendFile(chatId, audioUrl, 'audio.mp3', 'audio/mpeg');
   }
 
   /**
