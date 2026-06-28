@@ -67,6 +67,29 @@ export class WahaClient {
   }
 
   /**
+   * Send an image to a WhatsApp recipient (shows inline in chat).
+   * @param {string} chatId - Recipient ID
+   * @param {string} imageUrl - Public URL of the image
+   * @param {string} [caption] - Optional text caption
+   */
+  async sendImage(chatId, imageUrl, caption = '') {
+    try {
+      const response = await client.post('/api/sendImage', {
+        session: WAHA_SESSION,
+        chatId: chatId,
+        file: {
+          url: imageUrl
+        },
+        ...(caption ? { caption } : {})
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error sending image to ${chatId}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Check if the WhatsApp session exists and is connected.
    * @returns {Promise<string|null>} Session status (e.g. 'SCAN_QR_CODE', 'WORKING', 'FAILED', or null if not found)
    */
