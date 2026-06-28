@@ -169,7 +169,7 @@ export async function handleWebhookEvent(event) {
         await waha.sendText(chatId, '🎨 _Sedang menggambar anime... Mohon tunggu_');
         try {
           const imgUrl = `https://prexzyapis.com/ai/anime?prompt=${encodeURIComponent(args)}`;
-          await waha.sendFile(chatId, imgUrl, 'anime.png', 'image/png', `Hasil gambar anime untuk prompt: "${args}"`);
+          await waha.sendImage(chatId, imgUrl, `Hasil gambar anime untuk prompt: "${args}"`);
         } catch (err) {
           console.error(err);
           await waha.sendText(chatId, '⚠️ Gagal menghasilkan gambar anime.');
@@ -185,7 +185,7 @@ export async function handleWebhookEvent(event) {
         await waha.sendText(chatId, '🎨 _Sedang menggambar realistis... Mohon tunggu_');
         try {
           const imgUrl = `https://prexzyapis.com/ai/realistic?prompt=${encodeURIComponent(args)}`;
-          await waha.sendFile(chatId, imgUrl, 'realistic.png', 'image/png', `Hasil gambar realistis untuk prompt: "${args}"`);
+          await waha.sendImage(chatId, imgUrl, `Hasil gambar realistis untuk prompt: "${args}"`);
         } catch (err) {
           console.error(err);
           await waha.sendText(chatId, '⚠️ Gagal menghasilkan gambar realistis.');
@@ -195,7 +195,7 @@ export async function handleWebhookEvent(event) {
 
       case '!cat': {
         try {
-          await waha.sendFile(chatId, 'https://prexzyapis.com/random/cat', 'cat.jpg', 'image/jpeg', '🐱 Kucing lucu!');
+          await waha.sendImage(chatId, 'https://prexzyapis.com/random/cat', '🐱 Kucing lucu!');
         } catch (err) {
           console.error(err);
           await waha.sendText(chatId, '⚠️ Gagal mengirim gambar kucing.');
@@ -205,7 +205,7 @@ export async function handleWebhookEvent(event) {
 
       case '!dog': {
         try {
-          await waha.sendFile(chatId, 'https://prexzyapis.com/random/dog', 'dog.jpg', 'image/jpeg', '🐶 Anjing lucu!');
+          await waha.sendImage(chatId, 'https://prexzyapis.com/random/dog', '🐶 Anjing lucu!');
         } catch (err) {
           console.error(err);
           await waha.sendText(chatId, '⚠️ Gagal mengirim gambar anjing.');
@@ -215,7 +215,7 @@ export async function handleWebhookEvent(event) {
 
       case '!waifu': {
         try {
-          await waha.sendFile(chatId, 'https://prexzyapis.com/random/waifu', 'waifu.jpg', 'image/jpeg', '✨ Waifu kamu!');
+          await waha.sendImage(chatId, 'https://prexzyapis.com/random/waifu', '✨ Waifu kamu!');
         } catch (err) {
           console.error(err);
           await waha.sendText(chatId, '⚠️ Gagal mengirim gambar waifu.');
@@ -225,7 +225,7 @@ export async function handleWebhookEvent(event) {
 
       case '!car': {
         try {
-          await waha.sendFile(chatId, 'https://prexzyapis.com/random/car', 'car.jpg', 'image/jpeg', '🏎️ Mobil keren!');
+          await waha.sendImage(chatId, 'https://prexzyapis.com/random/car', '🏎️ Mobil keren!');
         } catch (err) {
           console.error(err);
           await waha.sendText(chatId, '⚠️ Gagal mengirim gambar mobil.');
