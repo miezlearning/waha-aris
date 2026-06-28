@@ -13,6 +13,42 @@ const JOKES = [
 ];
 
 /**
+ * Helper to download and send media from AIO downloader.
+ */
+async function downloadMedia(chatId, url, platformName) {
+  await waha.sendText(chatId, `⏳ _Sedang memproses unduhan dari ${platformName}... Mohon tunggu_`);
+  try {
+    const response = await axios.get(`https://prexzyapis.com/download/aio?url=${encodeURIComponent(url)}`);
+    const data = response.data;
+    
+    if (data && data.status && data.medias && data.medias.length > 0) {
+      // Find the first working media
+      let media = data.medias.find(m => m.type === 'video');
+      if (!media) media = data.medias.find(m => m.type === 'image');
+      if (!media) media = data.medias[0];
+      
+      const mediaUrl = media.url;
+      const type = media.type;
+      
+      if (type === 'video') {
+        await waha.sendFile(chatId, mediaUrl, `${platformName}_video.mp4`, 'video/mp4', `📥 Berhasil mengunduh video dari ${platformName}!`);
+      } else if (type === 'image') {
+        await waha.sendImage(chatId, mediaUrl, `📥 Berhasil mengunduh gambar dari ${platformName}!`);
+      } else if (type === 'audio') {
+        await waha.sendFile(chatId, mediaUrl, `${platformName}_audio.mp3`, 'audio/mpeg', `📥 Berhasil mengunduh audio dari ${platformName}!`);
+      } else {
+        await waha.sendText(chatId, `⚠️ Format media tidak didukung.`);
+      }
+    } else {
+      await waha.sendText(chatId, `⚠️ Gagal memproses link ${platformName}. Pastikan link valid dan bersifat publik.`);
+    }
+  } catch (err) {
+    console.error(err);
+    await waha.sendText(chatId, `⚠️ Terjadi kesalahan saat mengunduh dari ${platformName}.`);
+  }
+}
+
+/**
  * Handle incoming webhook messages.
  * @param {object} event - Webhook event payload
  */
@@ -56,19 +92,31 @@ export async function handleWebhookEvent(event) {
         case '!help': {
           const helpText = 
             `🤖 *Aris Bot Menu* 🤖\n\n` +
-            `Berikut adalah perintah yang bisa Anda gunakan:\n` +
+            `*Informasi & Hiburan:*\n` +
             `• *!help* - Menampilkan menu ini\n` +
             `• *!ping* - Tes koneksi bot\n` +
             `• *!about* - Tentang bot ini\n` +
             `• *!echo <teks>* - Mengulangi teks Anda\n` +
             `• *!joke* - Humor acak\n` +
-            `• *!ai / !deepseek <tanya>* - Tanya AI\n` +
             `• *!cuaca <kota>* - Info cuaca kota\n` +
-            `• *!lyric <judul>* - Lirik lagu\n` +
+            `• *!lyric <judul>* - Lirik lagu\n\n` +
+            `*Kecerdasan Buatan (AI):*\n` +
+            `• *!ai / !deepseek <tanya>* - Tanya AI\n` +
             `• *!animeimg <prompt>* - Gambar anime AI\n` +
-            `• *!realisticimg <prompt>* - Gambar realistis AI\n` +
-            `• *!cat* - Gambar kucing acak\n` +
-            `• *!dog* - Gambar anjing acak\n` +
+            `• *!realisticimg <prompt>* - Gambar realistis AI\n\n` +
+            `*Media Downloader:*\n` +
+            `• *!tiktok / !tt <url>* - Download TikTok\n` +
+            `• *!youtube / !yt <url>* - Download YouTube\n` +
+            `• *!instagram / !ig <url>* - Download Instagram\n` +
+            `• *!facebook / !fb <url>* - Download Facebook\n` +
+            `• *!pinterest / !pin <url>* - Download Pinterest\n` +
+            `• *!threads <url>* - Download Threads\n` +
+            `• *!spotify <url>* - Download Spotify\n` +
+            `• *!capcut <url>* - Download CapCut\n` +
+            `• *!douyin <url>* - Download Douyin\n` +
+            `• *!download / !aio <url>* - Download Multi-Platform\n\n` +
+            `*Gambar Hewan & Hobi:*\n` +
+            `• *!cat* / *!dog* - Gambar hewan acak\n` +
             `• *!waifu* - Gambar waifu acak\n` +
             `• *!car* - Gambar mobil acak\n\n` +
             `_Coba juga kirim pesan santai seperti 'halo' atau 'aris'!_`;
@@ -233,6 +281,144 @@ export async function handleWebhookEvent(event) {
           } catch (err) {
             console.error(err);
             await waha.sendText(chatId, '⚠️ Gagal mengirim gambar mobil.');
+          }
+          break;
+        }
+
+        case '!tiktok':
+        case '!tt': {
+          if (!args) {
+            await waha.sendText(chatId, '⚠️ Silakan masukkan link TikTok. Contoh: `!tiktok https://www.tiktok.com/...`');
+            break;
+          }
+          await downloadMedia(chatId, args, 'TikTok');
+          break;
+        }
+
+        case '!youtube':
+        case '!yt': {
+          if (!args) {
+            await waha.sendText(chatId, '⚠️ Silakan masukkan link YouTube. Contoh: `!youtube https://www.youtube.com/...`');
+            break;
+          }
+          await downloadMedia(chatId, args, 'YouTube');
+          break;
+        }
+
+        case '!instagram':
+        case '!ig': {
+          if (!args) {
+            await waha.sendText(chatId, '⚠️ Silakan masukkan link Instagram. Contoh: `!instagram https://www.instagram.com/...`');
+            break;
+          }
+          await downloadMedia(chatId, args, 'Instagram');
+          break;
+        }
+
+        case '!facebook':
+        case '!fb': {
+          if (!args) {
+            await waha.sendText(chatId, '⚠️ Silakan masukkan link Facebook. Contoh: `!facebook https://www.facebook.com/...`');
+            break;
+          }
+          await downloadMedia(chatId, args, 'Facebook');
+          break;
+        }
+
+        case '!pinterest':
+        case '!pin': {
+          if (!args) {
+            await waha.sendText(chatId, '⚠️ Silakan masukkan link Pinterest. Contoh: `!pinterest https://id.pinterest.com/...`');
+            break;
+          }
+          await downloadMedia(chatId, args, 'Pinterest');
+          break;
+        }
+
+        case '!threads': {
+          if (!args) {
+            await waha.sendText(chatId, '⚠️ Silakan masukkan link Threads. Contoh: `!threads https://www.threads.net/...`');
+            break;
+          }
+          await downloadMedia(chatId, args, 'Threads');
+          break;
+        }
+
+        case '!capcut': {
+          if (!args) {
+            await waha.sendText(chatId, '⚠️ Silakan masukkan link CapCut. Contoh: `!capcut https://www.capcut.com/...`');
+            break;
+          }
+          await downloadMedia(chatId, args, 'CapCut');
+          break;
+        }
+
+        case '!douyin': {
+          if (!args) {
+            await waha.sendText(chatId, '⚠️ Silakan masukkan link Douyin. Contoh: `!douyin https://v.douyin.com/...`');
+            break;
+          }
+          await downloadMedia(chatId, args, 'Douyin');
+          break;
+        }
+
+        case '!aio':
+        case '!download': {
+          if (!args) {
+            await waha.sendText(chatId, '⚠️ Silakan masukkan link media yang ingin diunduh. Contoh: `!download https://...`');
+            break;
+          }
+          await downloadMedia(chatId, args, 'AIO Downloader');
+          break;
+        }
+
+        case '!spotify': {
+          if (!args) {
+            await waha.sendText(chatId, '⚠️ Silakan masukkan link Spotify. Contoh: `!spotify https://open.spotify.com/track/...`');
+            break;
+          }
+          await waha.sendText(chatId, '⏳ _Sedang memproses musik Spotify... Mohon tunggu (proses ini memakan waktu sekitar 15-30 detik)_');
+          try {
+            // Coba Spotify V2 dahulu
+            let response = await axios.get(`https://prexzyapis.com/download/spotifyv2?url=${encodeURIComponent(args)}`, { timeout: 30000 });
+            let data = response.data;
+            
+            let downloadUrl = '';
+            let title = 'Spotify Music';
+            
+            if (data && data.status) {
+              if (data.result) {
+                downloadUrl = data.result.download_url || data.result.link || data.result.url;
+                title = data.result.title || title;
+              } else if (data.data) {
+                downloadUrl = data.data.download || data.data.url || data.data.link;
+                title = data.data.title || title;
+              }
+            }
+            
+            // Jika V2 gagal, coba V1
+            if (!downloadUrl) {
+              response = await axios.get(`https://prexzyapis.com/download/spotify?url=${encodeURIComponent(args)}`, { timeout: 30000 });
+              data = response.data;
+              if (data && data.status) {
+                if (data.result) {
+                  downloadUrl = data.result.download_url || data.result.link || data.result.url;
+                  title = data.result.title || title;
+                } else if (data.data) {
+                  downloadUrl = data.data.download || data.data.url || data.data.link;
+                  title = data.data.title || title;
+                }
+              }
+            }
+            
+            if (downloadUrl) {
+              await waha.sendFile(chatId, downloadUrl, `${title}.mp3`, 'audio/mpeg', `🎵 Berhasil mengunduh lagu: *${title}*!`);
+            } else {
+              await waha.sendText(chatId, '⚠️ Gagal mengunduh musik dari Spotify. Pastikan link Spotify valid.');
+            }
+          } catch (err) {
+            console.error(err);
+            await waha.sendText(chatId, '⚠️ Terjadi kesalahan atau server Spotify sedang sibuk. Silakan coba lagi nanti.');
           }
           break;
         }
