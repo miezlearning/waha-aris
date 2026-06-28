@@ -164,4 +164,36 @@ export class WahaClient {
       throw error;
     }
   }
+
+  /**
+   * Start typing presence for a specific chat.
+   * @param {string} chatId - Recipient ID
+   */
+  async startTyping(chatId) {
+    try {
+      const response = await client.post(`/api/${WAHA_SESSION}/presence`, {
+        chatId: chatId,
+        presence: 'typing',
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error starting typing for ${chatId}:`, error.response?.data || error.message);
+    }
+  }
+
+  /**
+   * Stop typing presence for a specific chat.
+   * @param {string} chatId - Recipient ID
+   */
+  async stopTyping(chatId) {
+    try {
+      const response = await client.post(`/api/${WAHA_SESSION}/presence`, {
+        chatId: chatId,
+        presence: 'paused',
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error stopping typing for ${chatId}:`, error.response?.data || error.message);
+    }
+  }
 }
