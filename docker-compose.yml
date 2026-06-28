@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: waha
+    ports:
+      - "3000:3000"
+    environment:
+      - WAHA_DASHBOARD_USERNAME=admin
+      - WAHA_DASHBOARD_PASSWORD=arisbot123
+      - WHATSAPP_SWAGGER_USERNAME=admin
+      - WHATSAPP_SWAGGER_PASSWORD=arisbot123
+      - WAHA_API_KEY=arisbot123
+    volumes:
+      - waha_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  waha_data:
