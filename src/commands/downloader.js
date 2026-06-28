@@ -2,9 +2,17 @@ import axios from 'axios';
 
 /**
  * Clean URL by removing search queries for specific platforms to prevent signature/scrape errors.
+ * Also converts long YouTube links to short format because Prexzy APIs YouTube downloader only supports short format.
  */
 function cleanUrl(url, platformName) {
   try {
+    if (platformName === 'YouTube') {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      if (match && match[2].length === 11) {
+        return `https://youtu.be/${match[2]}`;
+      }
+    }
     const parsed = new URL(url);
     if (platformName === 'Instagram' || platformName === 'TikTok') {
       parsed.search = ''; // Remove all query parameters
@@ -26,7 +34,7 @@ async function downloadMedia(chatId, url, platformName, waha) {
   let isVideo = true; // Default to video
   let captionText = `📥 Berhasil mengunduh dari ${platformName}!`;
 
-  // 1. Try Platform-Specific Endpoints first (e.g. Instagram direct scraper is more stable)
+  // 1. Try Platform-Specific Endpoints first (e.g. Instagram & YouTube direct scrapers are more stable with clean URLs)
   if (platformName === 'Instagram') {
     try {
       const response = await axios.get(`https://prexzyapis.com/download/instagram?url=${encodeURIComponent(cleanedUrl)}`, { timeout: 15000 });
@@ -47,6 +55,18 @@ async function downloadMedia(chatId, url, platformName, waha) {
       }
     } catch (err) {
       console.error(`Instagram specific downloader failed, falling back:`, err.message);
+    }
+  } else if (platformName === 'YouTube') {
+    try {
+      const response = await axios.get(`https://prexzyapis.com/download/youtube-video?url=${encodeURIComponent(cleanedUrl)}`, { timeout: 15000 });
+      const resData = response.data;
+      if (resData && resData.status) {
+        const d = resData.data || resData.result || resData;
+        downloadUrl = d.url || d.download_url || d.link;
+        isVideo = true;
+      }
+    } catch (err) {
+      console.error(`YouTube specific downloader failed, falling back:`, err.message);
     }
   }
 
@@ -296,78 +316,91 @@ export const spotify = {
 export const play = {
   name: '!play',
   aliases: ['!lagu', '!song', '!music'],
-  description: 'Cari & download musik dari SoundCloud atau YouTube',
+  description: 'Cari & download musik dari YouTube',
   async execute(chatId, args, waha) {
     if (!args) {
       await waha.sendText(chatId, '⚠️ Silakan masukkan judul lagu yang ingin dicari. Contoh: `!play bohemian rhapsody`');
       return;
     }
-    await waha.sendText(chatId, `🔍 _Mencari lagu "${args}"..._`);
+    await waha.sendText(chatId, `🔍 _Mencari lagu "${args}" di YouTube..._`);
     
-    // 1. Coba cari di SoundCloud terlebih dahulu (lebih cepat & link download stabil)
     try {
-      const scResponse = await axios.get(`https://prexzyapis.com/search/soundcloud?q=${encodeURIComponent(args)}`, { timeout: 10000 });
-      const scData = scResponse.data;
-      
-      if (scData && scData.status && scData.data && scData.data.length > 0) {
-        const track = scData.data[0];
-        const trackUrl = track.url;
-        const title = track.title;
-        
-        await waha.sendText(chatId, `🎵 *Menemukan (SoundCloud):* ${title}\n⏳ _Sedang memproses audio... Mohon tunggu_`);
-        
-        try {
-          const dlResponse = await axios.get(`https://prexzyapis.com/download/soundcloud?url=${encodeURIComponent(trackUrl)}`, { timeout: 15000 });
-          const dlData = dlResponse.data;
-          
-          if (dlData && dlData.status && dlData.data && dlData.data.audio_url) {
-            await waha.sendAudio(chatId, dlData.data.audio_url);
-            await waha.sendText(chatId, `🎧 Selamat mendengarkan *${title}*!`);
-            return; // Sukses, langsung keluar
-          }
-        } catch (scDlErr) {
-          console.error('SoundCloud download failed, trying YouTube fallback:', scDlErr.message);
-        }
-      }
-    } catch (scSearchErr) {
-      console.error('SoundCloud search failed, trying YouTube fallback:', scSearchErr.message);
-    }
-    
-    // 2. Cadangan: Coba cari di YouTube
-    await waha.sendText(chatId, `🔍 _SoundCloud sibuk, mencari "${args}" di YouTube..._`);
-    try {
+      // 1. Cari video di YouTube
       const searchResponse = await axios.get(`https://prexzyapis.com/search/youtube?q=${encodeURIComponent(args)}`, { timeout: 15000 });
       const searchData = searchResponse.data;
       
       if (!searchData || !searchData.status || !searchData.data || searchData.data.length === 0) {
-        await waha.sendText(chatId, `⚠️ Lagu "${args}" tidak ditemukan di SoundCloud maupun YouTube.`);
+        await waha.sendText(chatId, `⚠️ Lagu "${args}" tidak ditemukan di YouTube.`);
         return;
       }
       
       const firstResult = searchData.data[0];
-      const videoUrl = firstResult.link;
+      const rawVideoUrl = firstResult.link;
       const title = firstResult.title;
       const channel = firstResult.channel;
       const duration = firstResult.duration;
       
-      await waha.sendText(chatId, `🎵 *Menemukan (YouTube):* ${title}\n👤 *Channel:* ${channel}\n⏱️ *Durasi:* ${duration}\n\n⏳ _Sedang memproses audio dari YouTube... (proses ini mungkin memakan waktu lebih lama)_`);
+      // Convert to short YouTube URL format to avoid API regex failures
+      const cleanedUrl = cleanUrl(rawVideoUrl, 'YouTube');
+      
+      await waha.sendText(chatId, `🎵 *Menemukan:* ${title}\n👤 *Channel:* ${channel}\n⏱️ *Durasi:* ${duration}\n\n⏳ _Sedang memproses audio... Mohon tunggu_`);
       
       let downloadUrl = '';
       
-      // Coba AIO Downloader dulu
+      // 2. Coba YouTube Audio Downloader khusus (dengan URL pendek)
       try {
-        const aioResponse = await axios.get(`https://prexzyapis.com/download/aio?url=${encodeURIComponent(videoUrl)}`, { timeout: 15000 });
-        const aioData = aioResponse.data;
-        if (aioData && aioData.status && aioData.medias && aioData.medias.length > 0) {
-          let media = aioData.medias.find(m => m.type === 'audio');
-          if (media) {
-            downloadUrl = media.url;
+        const response = await axios.get(`https://prexzyapis.com/download/youtube-audio?url=${encodeURIComponent(cleanedUrl)}`, { timeout: 20000 });
+        const resData = response.data;
+        if (resData && resData.status) {
+          const d = resData.data || resData.result || resData;
+          const tempUrl = d.url || d.download_url || d.link;
+          if (tempUrl && !tempUrl.includes('undefined')) {
+            downloadUrl = tempUrl;
           }
         }
-      } catch (aioErr) {
-        console.error('AIO Downloader failed for play command fallback:', aioErr.message);
+      } catch (err) {
+        console.error('YouTube specific audio downloader failed:', err.message);
       }
       
+      // 3. Cadangan 1: Coba SoundCloud
+      if (!downloadUrl) {
+        console.log('YouTube audio downloader failed, trying SoundCloud fallback...');
+        try {
+          const scResponse = await axios.get(`https://prexzyapis.com/search/soundcloud?q=${encodeURIComponent(args)}`, { timeout: 10000 });
+          const scData = scResponse.data;
+          
+          if (scData && scData.status && scData.data && scData.data.length > 0) {
+            const track = scData.data[0];
+            const trackUrl = track.url;
+            const scDlResponse = await axios.get(`https://prexzyapis.com/download/soundcloud?url=${encodeURIComponent(trackUrl)}`, { timeout: 15000 });
+            const scDlData = scDlResponse.data;
+            if (scDlData && scDlData.status && scDlData.data && scDlData.data.audio_url) {
+              downloadUrl = scDlData.data.audio_url;
+            }
+          }
+        } catch (scErr) {
+          console.error('SoundCloud fallback failed:', scErr.message);
+        }
+      }
+      
+      // 4. Cadangan 2: Coba AIO Downloader (menggunakan google redirector)
+      if (!downloadUrl) {
+        console.log('SoundCloud fallback failed, trying YouTube AIO fallback...');
+        try {
+          const aioResponse = await axios.get(`https://prexzyapis.com/download/aio?url=${encodeURIComponent(cleanedUrl)}`, { timeout: 15000 });
+          const aioData = aioResponse.data;
+          if (aioData && aioData.status && aioData.medias && aioData.medias.length > 0) {
+            let media = aioData.medias.find(m => m.type === 'audio');
+            if (media) {
+              downloadUrl = media.url;
+            }
+          }
+        } catch (aioErr) {
+          console.error('AIO Downloader failed:', aioErr.message);
+        }
+      }
+      
+      // 5. Kirim berkas audio
       if (downloadUrl) {
         await waha.sendAudio(chatId, downloadUrl);
         await waha.sendText(chatId, `🎧 Selamat mendengarkan *${title}*!`);
