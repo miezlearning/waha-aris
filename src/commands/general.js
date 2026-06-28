@@ -114,6 +114,7 @@ export const help = {
       `• *!pinterest / !pin <url>* - Download Pinterest\n` +
       `• *!threads <url>* - Download Threads\n` +
       `• *!spotify <url>* - Download Spotify\n` +
+      `• *!play / !lagu <judul>* - Cari & download lagu\n` +
       `• *!capcut <url>* - Download CapCut\n` +
       `• *!douyin <url>* - Download Douyin\n` +
       `• *!download / !aio <url>* - Download Multi-Platform\n\n` +
