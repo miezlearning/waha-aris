@@ -90,6 +90,50 @@ export class WahaClient {
   }
 
   /**
+   * Send a video to a WhatsApp recipient (shows inline and playable).
+   * @param {string} chatId - Recipient ID
+   * @param {string} videoUrl - Public URL of the video
+   * @param {string} [caption] - Optional text caption
+   */
+  async sendVideo(chatId, videoUrl, caption = '') {
+    try {
+      const response = await client.post('/api/sendVideo', {
+        session: WAHA_SESSION,
+        chatId: chatId,
+        file: {
+          url: videoUrl
+        },
+        ...(caption ? { caption } : {})
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error sending video to ${chatId}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Send an audio file to a WhatsApp recipient.
+   * @param {string} chatId - Recipient ID
+   * @param {string} audioUrl - Public URL of the audio file
+   */
+  async sendAudio(chatId, audioUrl) {
+    try {
+      const response = await client.post('/api/sendAudio', {
+        session: WAHA_SESSION,
+        chatId: chatId,
+        file: {
+          url: audioUrl
+        }
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error sending audio to ${chatId}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Check if the WhatsApp session exists and is connected.
    * @returns {Promise<string|null>} Session status (e.g. 'SCAN_QR_CODE', 'WORKING', 'FAILED', or null if not found)
    */

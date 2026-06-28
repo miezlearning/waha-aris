@@ -31,11 +31,11 @@ async function downloadMedia(chatId, url, platformName) {
       const type = media.type;
       
       if (type === 'video') {
-        await waha.sendFile(chatId, mediaUrl, `${platformName}_video.mp4`, 'video/mp4', `📥 Berhasil mengunduh video dari ${platformName}!`);
+        await waha.sendVideo(chatId, mediaUrl, `📥 Berhasil mengunduh video dari ${platformName}!`);
       } else if (type === 'image') {
         await waha.sendImage(chatId, mediaUrl, `📥 Berhasil mengunduh gambar dari ${platformName}!`);
       } else if (type === 'audio') {
-        await waha.sendFile(chatId, mediaUrl, `${platformName}_audio.mp3`, 'audio/mpeg', `📥 Berhasil mengunduh audio dari ${platformName}!`);
+        await waha.sendAudio(chatId, mediaUrl);
       } else {
         await waha.sendText(chatId, `⚠️ Format media tidak didukung.`);
       }
@@ -412,7 +412,8 @@ export async function handleWebhookEvent(event) {
             }
             
             if (downloadUrl) {
-              await waha.sendFile(chatId, downloadUrl, `${title}.mp3`, 'audio/mpeg', `🎵 Berhasil mengunduh lagu: *${title}*!`);
+              await waha.sendAudio(chatId, downloadUrl);
+              await waha.sendText(chatId, `🎵 Berhasil mengunduh lagu Spotify: *${title}*!`);
             } else {
               await waha.sendText(chatId, '⚠️ Gagal mengunduh musik dari Spotify. Pastikan link Spotify valid.');
             }
