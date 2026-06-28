@@ -117,13 +117,24 @@ export class WahaClient {
     }
   }
 
-  /**
-   * Send an audio file to a WhatsApp recipient.
-   * @param {string} chatId - Recipient ID
-   * @param {string} audioUrl - Public URL of the audio file
-   */
   async sendAudio(chatId, audioUrl) {
-    return this.sendFile(chatId, audioUrl, 'audio.mp3', 'audio/mpeg');
+    try {
+      const response = await client.post('/api/sendVoice', {
+        session: WAHA_SESSION,
+        chatId: chatId,
+        file: {
+          url: audioUrl,
+          mimetype: 'audio/mp3',
+          filename: 'audio.mp3'
+        },
+        convert: true
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error sending voice to ${chatId}:`, error.response?.data || error.message);
+      // Fallback to sendFile if sendVoice fails
+      return this.sendFile(chatId, audioUrl, 'audio.mp3', 'audio/mpeg');
+    }
   }
 
   /**
