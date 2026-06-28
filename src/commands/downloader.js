@@ -325,88 +325,54 @@ export const play = {
     await waha.sendText(chatId, `🔍 _Mencari lagu "${args}" di YouTube..._`);
     
     try {
-      // 1. Cari video di YouTube menggunakan API Mutiadev
-      const searchResponse = await axios.get(`https://api.mutiadev.my.id/search/youtube?q=${encodeURIComponent(args)}`, { timeout: 15000 });
-      const searchData = searchResponse.data;
+      // 1. Cari & download menggunakan API YTPlayV2
+      const playResponse = await axios.get(`https://api.ikyyxd.my.id/search/ytplayv2?q=${encodeURIComponent(args)}`, { timeout: 15000 });
+      const playData = playResponse.data;
       
-      if (!searchData || !searchData.status || !searchData.result || searchData.result.length === 0) {
-        await waha.sendText(chatId, `⚠️ Lagu "${args}" tidak ditemukan di YouTube.`);
-        return;
+      if (playData && playData.status && playData.result) {
+        const res = playData.result;
+        const title = res.title;
+        const durationSec = res.duration || 0;
+        const minutes = Math.floor(durationSec / 60);
+        const seconds = durationSec % 60;
+        const durationStr = durationSec ? `${minutes}:${seconds < 10 ? '0' : ''}${seconds}` : 'Unknown';
+        const downloadUrl = res.audio ? res.audio.url : null;
+        
+        if (downloadUrl) {
+          await waha.sendText(chatId, `🎵 *Menemukan:* ${title}\n⏱️ *Durasi:* ${durationStr}\n\n⏳ _Sedang mengirim audio... Mohon tunggu_`);
+          await waha.sendAudio(chatId, downloadUrl);
+          await waha.sendText(chatId, `🎧 Selamat mendengarkan *${title}*!`);
+          return;
+        }
       }
       
-      const firstResult = searchData.result[0];
-      const rawVideoUrl = firstResult.link;
-      const title = firstResult.title;
-      const channel = firstResult.channel;
-      const duration = firstResult.duration;
+      // 2. Cadangan: Jika YTPlayV2 gagal, coba SoundCloud langsung menggunakan query asli args
+      console.log('YTPlayV2 failed or no download URL, trying SoundCloud fallback...');
+      await waha.sendText(chatId, `⏳ _YouTube sibuk, memproses via SoundCloud..._`);
       
-      // Convert to short YouTube URL format to avoid API regex failures
-      const cleanedUrl = cleanUrl(rawVideoUrl, 'YouTube');
-      
-      await waha.sendText(chatId, `🎵 *Menemukan:* ${title}\n👤 *Channel:* ${channel}\n⏱️ *Durasi:* ${duration}\n\n⏳ _Sedang memproses audio... Mohon tunggu_`);
-      
-      let downloadUrl = '';
-      
-      // 2. Coba YouTube Audio Downloader khusus (dengan URL pendek)
       try {
-        const response = await axios.get(`https://prexzyapis.com/download/youtube-audio?url=${encodeURIComponent(cleanedUrl)}`, { timeout: 20000 });
-        const resData = response.data;
-        if (resData && resData.status) {
-          const d = resData.data || resData.result || resData;
-          const tempUrl = d.url || d.download_url || d.link;
-          if (tempUrl && !tempUrl.includes('undefined')) {
-            downloadUrl = tempUrl;
-          }
-        }
-      } catch (err) {
-        console.error('YouTube specific audio downloader failed:', err.message);
-      }
-      
-      // 3. Cadangan 1: Coba SoundCloud jika YouTube download link undefined/error
-      if (!downloadUrl) {
-        console.log('YouTube audio downloader failed, trying SoundCloud fallback...');
-        try {
-          const scResponse = await axios.get(`https://prexzyapis.com/search/soundcloud?q=${encodeURIComponent(title)}`, { timeout: 10000 });
-          const scData = scResponse.data;
+        const scResponse = await axios.get(`https://prexzyapis.com/search/soundcloud?q=${encodeURIComponent(args)}`, { timeout: 10000 });
+        const scData = scResponse.data;
+        
+        if (scData && scData.status && scData.data && scData.data.length > 0) {
+          const track = scData.data[0];
+          const trackUrl = track.url;
+          const title = track.title;
           
-          if (scData && scData.status && scData.data && scData.data.length > 0) {
-            const track = scData.data[0];
-            const trackUrl = track.url;
-            const scDlResponse = await axios.get(`https://prexzyapis.com/download/soundcloud?url=${encodeURIComponent(trackUrl)}`, { timeout: 15000 });
-            const scDlData = scDlResponse.data;
-            if (scDlData && scDlData.status && scDlData.data && scDlData.data.audio_url) {
-              downloadUrl = scDlData.data.audio_url;
-            }
+          const scDlResponse = await axios.get(`https://prexzyapis.com/download/soundcloud?url=${encodeURIComponent(trackUrl)}`, { timeout: 15000 });
+          const scDlData = scDlResponse.data;
+          
+          if (scDlData && scDlData.status && scDlData.data && scDlData.data.audio_url) {
+            await waha.sendAudio(chatId, scDlData.data.audio_url);
+            await waha.sendText(chatId, `🎧 Selamat mendengarkan *${title}*! (SoundCloud)`);
+            return;
           }
-        } catch (scErr) {
-          console.error('SoundCloud fallback failed:', scErr.message);
         }
+      } catch (scErr) {
+        console.error('SoundCloud fallback failed:', scErr.message);
       }
       
-      // 4. Cadangan 2: Coba AIO Downloader (menggunakan google redirector)
-      if (!downloadUrl) {
-        console.log('SoundCloud fallback failed, trying YouTube AIO fallback...');
-        try {
-          const aioResponse = await axios.get(`https://prexzyapis.com/download/aio?url=${encodeURIComponent(cleanedUrl)}`, { timeout: 15000 });
-          const aioData = aioResponse.data;
-          if (aioData && aioData.status && aioData.medias && aioData.medias.length > 0) {
-            let media = aioData.medias.find(m => m.type === 'audio');
-            if (media) {
-              downloadUrl = media.url;
-            }
-          }
-        } catch (aioErr) {
-          console.error('AIO Downloader failed:', aioErr.message);
-        }
-      }
-      
-      // 5. Kirim berkas audio
-      if (downloadUrl) {
-        await waha.sendAudio(chatId, downloadUrl);
-        await waha.sendText(chatId, `🎧 Selamat mendengarkan *${title}*!`);
-      } else {
-        await waha.sendText(chatId, '⚠️ Gagal memproses audio untuk lagu ini. Silakan coba judul lain.');
-      }
+      await waha.sendText(chatId, '⚠️ Gagal memproses audio untuk lagu ini. Silakan coba judul lain.');
     } catch (err) {
       console.error(err);
       await waha.sendText(chatId, '⚠️ Terjadi kesalahan saat memproses lagu.');
