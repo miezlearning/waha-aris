@@ -325,16 +325,16 @@ export const play = {
     await waha.sendText(chatId, `🔍 _Mencari lagu "${args}" di YouTube..._`);
     
     try {
-      // 1. Cari video di YouTube
-      const searchResponse = await axios.get(`https://prexzyapis.com/search/youtube?q=${encodeURIComponent(args)}`, { timeout: 15000 });
+      // 1. Cari video di YouTube menggunakan API Mutiadev
+      const searchResponse = await axios.get(`https://api.mutiadev.my.id/search/youtube?q=${encodeURIComponent(args)}`, { timeout: 15000 });
       const searchData = searchResponse.data;
       
-      if (!searchData || !searchData.status || !searchData.data || searchData.data.length === 0) {
+      if (!searchData || !searchData.status || !searchData.result || searchData.result.length === 0) {
         await waha.sendText(chatId, `⚠️ Lagu "${args}" tidak ditemukan di YouTube.`);
         return;
       }
       
-      const firstResult = searchData.data[0];
+      const firstResult = searchData.result[0];
       const rawVideoUrl = firstResult.link;
       const title = firstResult.title;
       const channel = firstResult.channel;
@@ -362,11 +362,11 @@ export const play = {
         console.error('YouTube specific audio downloader failed:', err.message);
       }
       
-      // 3. Cadangan 1: Coba SoundCloud
+      // 3. Cadangan 1: Coba SoundCloud jika YouTube download link undefined/error
       if (!downloadUrl) {
         console.log('YouTube audio downloader failed, trying SoundCloud fallback...');
         try {
-          const scResponse = await axios.get(`https://prexzyapis.com/search/soundcloud?q=${encodeURIComponent(args)}`, { timeout: 10000 });
+          const scResponse = await axios.get(`https://prexzyapis.com/search/soundcloud?q=${encodeURIComponent(title)}`, { timeout: 10000 });
           const scData = scResponse.data;
           
           if (scData && scData.status && scData.data && scData.data.length > 0) {
