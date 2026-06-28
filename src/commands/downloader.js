@@ -357,7 +357,6 @@ export const play = {
           }
           
           await waha.sendAudio(chatId, downloadUrl);
-          await waha.sendText(chatId, `🎧 Selamat mendengarkan *${title}*!`);
           return;
         }
       }
@@ -380,7 +379,6 @@ export const play = {
           
           if (scDlData && scDlData.status && scDlData.data && scDlData.data.audio_url) {
             await waha.sendAudio(chatId, scDlData.data.audio_url);
-            await waha.sendText(chatId, `🎧 Selamat mendengarkan *${title}*! (SoundCloud)`);
             return;
           }
         }
