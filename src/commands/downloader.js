@@ -339,7 +339,23 @@ export const play = {
         const downloadUrl = res.audio ? res.audio.url : null;
         
         if (downloadUrl) {
-          await waha.sendText(chatId, `🎵 *Menemukan:* ${title}\n⏱️ *Durasi:* ${durationStr}\n\n⏳ _Sedang mengirim audio... Mohon tunggu_`);
+          const captionText = 
+            `🎵 *Menemukan:* ${title}\n` +
+            `⏱️ *Durasi:* ${durationStr}\n` +
+            `🔗 *Source:* ${res.source || 'YouTube'}\n\n` +
+            `⏳ _Sedang mengirim audio... Mohon tunggu_`;
+          
+          if (res.thumbnail) {
+            try {
+              await waha.sendImage(chatId, res.thumbnail, captionText);
+            } catch (imgErr) {
+              console.error('Failed to send play thumbnail:', imgErr.message);
+              await waha.sendText(chatId, captionText);
+            }
+          } else {
+            await waha.sendText(chatId, captionText);
+          }
+          
           await waha.sendAudio(chatId, downloadUrl);
           await waha.sendText(chatId, `🎧 Selamat mendengarkan *${title}*!`);
           return;
