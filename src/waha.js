@@ -107,6 +107,11 @@ export class WahaClient {
       });
       return response.data;
     } catch (error) {
+      // If error is 422 (unprocessable entity - e.g. needs waha:chrome tag), fall back to sendFile
+      if (error.response?.status === 422) {
+        console.warn(`sendVideo failed with 422 (Chrome engine needed). Falling back to sendFile...`);
+        return this.sendFile(chatId, videoUrl, 'video.mp4', 'video/mp4', caption);
+      }
       console.error(`Error sending video to ${chatId}:`, error.response?.data || error.message);
       throw error;
     }
@@ -128,8 +133,8 @@ export class WahaClient {
       });
       return response.data;
     } catch (error) {
-      console.error(`Error sending audio to ${chatId}:`, error.response?.data || error.message);
-      throw error;
+      console.warn(`sendAudio failed, falling back to sendFile:`, error.response?.data || error.message);
+      return this.sendFile(chatId, audioUrl, 'audio.mp3', 'audio/mpeg');
     }
   }
 
