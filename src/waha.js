@@ -40,6 +40,33 @@ export class WahaClient {
   }
 
   /**
+   * Send a file (image, video, document, audio) to a WhatsApp recipient.
+   * @param {string} chatId - Recipient ID
+   * @param {string} fileUrl - Public URL of the file
+   * @param {string} filename - Filename with extension (e.g. "image.jpg" or "video.mp4")
+   * @param {string} [mimetype] - Optional MIME type (e.g. "image/jpeg", "video/mp4")
+   * @param {string} [caption] - Optional text caption
+   */
+  async sendFile(chatId, fileUrl, filename, mimetype = '', caption = '') {
+    try {
+      const response = await client.post('/api/sendFile', {
+        session: WAHA_SESSION,
+        chatId: chatId,
+        file: {
+          url: fileUrl,
+          filename: filename,
+          ...(mimetype ? { mimetype } : {})
+        },
+        ...(caption ? { caption } : {})
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error sending file to ${chatId}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Check if the WhatsApp session exists and is connected.
    * @returns {Promise<string|null>} Session status (e.g. 'SCAN_QR_CODE', 'WORKING', 'FAILED', or null if not found)
    */
